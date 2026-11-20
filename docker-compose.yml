@@ -1,0 +1,47 @@
+# One command: `docker compose up`.
+# The client systems (payroll, dispatch, finance) run separately; their URLs come from the environment.
+
+x-client-systems: &client-systems
+  PAYROLL_URL: ${PAYROLL_URL:-http://host.docker.internal:8081}
+  DISPATCH_URL: ${DISPATCH_URL:-http://host.docker.internal:8082}
+  FINANCE_URL: ${FINANCE_URL:-http://host.docker.internal:8083}
+  # Assessment credentials published in each system's API.md; override via .env if they differ.
+  PAYROLL_API_KEY: ${PAYROLL_API_KEY:-assess-7f3c9a}
+  DISPATCH_CLIENT_ID: ${DISPATCH_CLIENT_ID:-me-assess}
+  DISPATCH_CLIENT_SECRET: ${DISPATCH_CLIENT_SECRET:-d1sp4tch-s3cret}
+  FINANCE_USER: ${FINANCE_USER:-svc_assess}
+  FINANCE_PASSWORD: ${FINANCE_PASSWORD:-Q4-close!}
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: northgate
+      POSTGRES_PASSWORD: northgate
+      POSTGRES_DB: northgate
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U northgate -d northgate"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  pipeline:
+    build: .
+    command: ["python", "-m", "northgate.smoke"]
+    environment:
+      <<: *client-systems
+      DATA_DIR: /data
+      OUTPUT_DIR: /output
+      DATABASE_URL: postgresql+psycopg://northgate:northgate@db:5432/northgate
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-opus-5-5}
+      PAYROLL_DRY_RUN: ${PAYROLL_DRY_RUN:-false}
+      PERIOD: ${PERIOD:-}
+    volumes:
+      - ${DATA_DIR:-./data}:/data:ro
+      - ./output:/output
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      db:
+        condition: service_healthy
