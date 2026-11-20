@@ -1,0 +1,27 @@
+# Client package files: never commit (assessment rules forbid sharing them)
+data/
+mock_systems/
+*.pdf
+*.xlsx
+
+# Generated outputs
+output/
+
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+dist/
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store
