@@ -204,6 +204,34 @@ against the Opus run: the first Sonnet pass left the name empty for two chat mes
 "Andre" and "Ana L" (code held both, nothing wrong was written); after making `employee_name`
 required and saying a first name alone counts, all 71 messages gave the same decisions as Opus.
 
+## Billing
+
+**D-40. Billable coverage.** A filled call-out or vacation posting in the period at a building whose
+agreement makes coverage billable (Meridian One, Meridian Plaza, Corlett). Each one gets a backup note,
+including the ones not yet on an invoice: those are exactly the notes needed to bill them.
+
+**D-41. Matching invoice coverage lines to postings.** Lines that print `ref P-...` use it. The others
+are matched by building, service date and shift; then the replacement's name if the line has one;
+then the amount, if it equals one candidate's billable amount exactly. Corlett lines carry no names
+(Template B client): on 10/26 two postings fit, and the 222.03 line equals the temporary worker's
+amount, not the floater's 299.82. A line that still fits several postings, or none, is not guessed: it
+goes to exceptions. All 27 coverage lines matched, and every billed amount equals the rules' amount,
+which also confirms D-06 (the covering employee's own rate).
+
+**D-42. Time on site (Template A).** First clock-in within 2 hours before to 4 hours after the shift
+start, last clock-out within 4 hours before to 3 hours after the shift end, at the covered building.
+This keeps an employee's own day shift apart from an overtime night shift at the same building, and
+finds a night clock-out after midnight. Maria Hernandez has no clock-out on 10/13: `Not recorded`
+and an exception, as the template says.
+
+**D-43. Note contents.** Scheduled times are those of Article 14.1, written 16:00 to 00:00. Position
+covered is the absent employee's HR job class, found through the call-out matched to the posting, or
+the name on the posting for vacation cover; the note never names them or the reason. Names are
+written from HR in title case ("Teuta Berisha").
+
+**D-44. Unbilled coverage at fixed-fee buildings** is 0, not blank: the definition only counts
+buildings whose agreement makes coverage billable, so there is nothing to bill there.
+
 ## Documentation inconsistencies
 
 **D-05. Backup note templates file name.** `docs/data_guide.md` refers to `billing_note_formats.md`;
