@@ -130,6 +130,73 @@ ledger assigns it to October, so it is included; labor cost is exactly the repor
 10/31 and is not in the AR report either). A payment that names no invoice in the report would be aged
 as an unapplied credit and reported; none occur in this dataset.
 
+## Call-outs and payroll
+
+**D-30. What Claude does with a call-out.** Claude reads each log row and chat message into a fixed
+schema: is it an absence, the reason, the name and building as written, the shift, the days in the
+caller's own words, and any time the caller states. It gets the message text only, no timestamps, so
+it cannot confuse a phone timestamp with something the caller said. Code then checks the answer
+against the text: the words for each day and the name must appear in the message, and a stated time
+is only used if its hour is written there. Dates, people, notice, codes and payroll are all code.
+
+**D-31. When notice was given.** 14.2 measures notice from when the call-out is received. Phone call:
+the time reception logged it. Voicemail: the phone system's timestamp (its year taken from the log
+date). One voicemail has no timestamp but the caller says "it's about 11 in the morning"; that time is
+used (it is earlier than the time reception logged it) and the absence is flagged medium. If a
+voicemail had no time at all, the logged time would be used as an upper bound, and a late-notice code
+from it is held. Chat: the time the employee texted the manager when the manager states it (Gloria
+"texted me this morning around 10:32", posted 13:20), otherwise the post time. The chat export has no
+time zone; it is read as the buildings' local time, like the log.
+
+**D-32. Which day.** today/tonight = the day the call-out was received; tomorrow = the next day; a
+weekday = its next occurrence. "Tomorrow" said before the first shift starts (00:25) can mean the day
+that has just begun, and the same weekday as today can mean today or next week: both are ambiguous.
+The dispatch posting created for the absence settles an ambiguous date (Zoran 10/29); otherwise the
+absence is held. Bereavement "tonight and Friday" is two absences.
+
+**D-33. Which employee.** Full name, name with an initial, or first name only, among people employed
+on the absence date; then the building and shift the caller gave, using their assignment that day
+(D-19). Two Maria Gonzalez work nights; the voicemail says only "the building", and the dispatch
+posting for that night (Halcyon) settles it. A first name alone (chat: "Jelena", "Gloria") is accepted
+when building and shift leave one person, and flagged medium.
+
+**D-34. Duplicates.** One absence per employee per date, whichever channel reported it; the earliest
+report is kept. A chat message relaying an absence is a report even when it says the employee "called
+the front desk too" (Andre 10/09), so the duplicate is caught by the rule, not by the wording. A call
+that only confirms an earlier one ("called back to confirm") is not an absence.
+
+**D-35. Coding.** In the guide's order: eligibility, notice, balance; absences in date order.
+- Late notice (LTN) and unpaid codes do not use a sick day; only SKP does.
+- An employee with no sick days left who also gave late notice gets LTN, because the guide checks
+  notice before balance.
+- The guide's eligibility step names the 14.3 probation period, so a clinic day also needs 90 days of
+  employment; an ineligible clinic visit is PER, as the guide says.
+- A clinic day already used this year is PER: the visit is not sick leave and the guide gives no
+  other code for it.
+- Bereavement needs an immediate relative (14.5); a fourth bereavement day, or a relative that cannot
+  be verified, is held for review.
+- HR's sick balance is as of the first day of the period (its column name says so); clinic use is for
+  the calendar year.
+
+**D-36. What is held for review.** Unidentified or ambiguous employee or date, a message Claude could
+not read or whose extraction does not match the text, a date outside the open pay period or on a
+weekend, an unknown shift where notice matters, payroll status other than ACTIVE (Wilfredo,
+PENDING_SETUP, coded SKU because he is in probation), and any answer from payroll other than success.
+Held absences are still coded, so a reviewer sees what would be written.
+
+**D-37. Writing to payroll exactly once.** Payroll has no idempotency key, and on the first live run
+it answered 503 "processing window" to POSTs it had in fact stored (3 of 4 times). So the writer asks
+payroll before each POST and again before any retry, adopts what is already there, never overwrites a
+different code (held instead), and after the batch is processed voids any extra copy. Every request
+is kept in `payroll_audit`, and `payroll_ledger` keeps the last state per absence; both survive
+reruns. A second full run made 0 writes. `PAYROLL_DRY_RUN=true` reads payroll but never writes;
+its rows show `final_status` DRY_RUN.
+
+**D-38. Output references.** `source_ref` is the spreadsheet row number as Excel shows it (header =
+row 1) for the log, and the message timestamp (`YYYY-MM-DD HH:MM:SS`, as printed) for the chat.
+Reception log rows that are not absences are listed in exceptions.csv; ordinary chat conversation is
+kept in `callout_events` but not listed.
+
 ## Documentation inconsistencies
 
 **D-05. Backup note templates file name.** `docs/data_guide.md` refers to `billing_note_formats.md`;
