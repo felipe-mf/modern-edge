@@ -246,6 +246,18 @@ held with payroll's answer. The next pipeline run reads the same actions, so an 
 written and a dismissed one stays out. Absences with no payroll ID or code cannot be approved, only
 dismissed.
 
+**D-47. The chatbot reads, never writes, and cites.** "Ask the data" uses Sonnet with fixed tools
+(building board, KPI records, lookup by source reference) and one SQL tool. The SQL tool accepts a
+single SELECT/WITH, runs it in a READ ONLY transaction with a 5 s timeout and a 200-row cap, and hides
+the model-answer cache. Claude must finish through an `answer` tool that lists the source references
+it used; the interface turns each into a link to the original record. When the data cannot answer,
+it is told to say so.
+
+**D-48. Interface shows exceptions, not decoration.** The building view is the home screen. The
+shift timeline marks only exceptions (out, overtime, late, missing punch, unexpected person); status
+is always a word, never colour alone; every record links to its source. The month line plots people
+on site against contracted posts so a short-staffed night stands out.
+
 ## Documentation inconsistencies
 
 **D-05. Backup note templates file name.** `docs/data_guide.md` refers to `billing_note_formats.md`;
