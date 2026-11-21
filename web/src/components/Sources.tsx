@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { X } from "lucide-react";
 import { createContext, useContext } from "react";
 
-import { api } from "../api";
+import { api, type Row } from "../api";
 import { formatValue, label } from "../format";
 import { ErrorNote, Skeleton } from "./States";
 
@@ -39,6 +39,15 @@ const TABLE_NAMES: Record<string, string> = {
   time_punches: "Time clock punch",
 };
 
+/** The fields worth reading in a stored record: not the row id, not the reference already in the
+ *  sheet's title, and not nested data (form fields, model extraction, event logs), which is kept for
+ *  the pipeline and reads as raw JSON. */
+function readableFields(record: Row, sourceRef: string): [string, unknown][] {
+  return Object.entries(record).filter(
+    ([key, value]) => key !== "id" && value !== null && value !== "" && typeof value !== "object" && String(value) !== sourceRef,
+  );
+}
+
 export function SourceSheet({ sourceRef, onClose }: { sourceRef: string; onClose: () => void }) {
   const found = useQuery({ queryKey: ["records", sourceRef], queryFn: () => api.records(sourceRef) });
   return (
@@ -59,11 +68,9 @@ export function SourceSheet({ sourceRef, onClose }: { sourceRef: string; onClose
           <section key={`${table}-${i}`} className="source-block">
             <h3>{TABLE_NAMES[table] ?? label(table)}</h3>
             <dl className="facts">
-              {Object.entries(record)
-                .filter(([key, value]) => key !== "id" && value !== null && value !== "")
-                .map(([key, value]) => (
-                  <Fact key={key} name={key} value={value} />
-                ))}
+              {readableFields(record, sourceRef).map(([key, value]) => (
+                <Fact key={key} name={key} value={value} />
+              ))}
             </dl>
           </section>
         ))}
@@ -72,12 +79,12 @@ export function SourceSheet({ sourceRef, onClose }: { sourceRef: string; onClose
   );
 }
 
-function Fact({ name, value }: { name: string; value: unknown }) {
-  const text = typeof value === "object" ? JSON.stringify(value) : formatValue(name, value);
+/** One label and value pair in a details list (`dl.facts`). */
+export function Fact({ name, value }: { name: string; value: unknown }) {
   return (
     <>
       <dt>{label(name)}</dt>
-      <dd style={{ overflowWrap: "anywhere" }}>{text}</dd>
+      <dd>{formatValue(name, value)}</dd>
     </>
   );
 }
