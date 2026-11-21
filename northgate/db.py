@@ -460,6 +460,68 @@ ar_open_items = Table(
     _source_ref(),
 )
 
+# --- call-outs and payroll ------------------------------------------------------------------------
+
+# One row per message outcome: an absence (one per day named), a duplicate, or not an absence.
+callout_events = Table(
+    "callout_events",
+    metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("source", String, nullable=False),  # reception_log / area_manager_chat
+    Column("source_ref", String, nullable=False),  # log row number or chat timestamp
+    Column("record_ref", Text, nullable=False),  # exact file line
+    Column("outcome", String, nullable=False),  # absence / duplicate / not_absence / unreadable
+    Column("reason", String),
+    Column("name_as_written", String),
+    Column("employee_id", String),
+    Column("payroll_id", Integer),
+    Column("absence_date", Date),
+    Column("building", String),
+    Column("shift", String),
+    Column("contact_at", DateTime),
+    Column("contact_basis", String),
+    Column("notice_hours", Numeric(6, 2)),
+    Column("code", String),
+    Column("code_reason", Text),
+    Column("decision", String),  # written / held_for_review
+    Column("hold_reason", Text),
+    Column("confidence", String),
+    Column("evidence", Text),
+    Column("duplicate_of", String),
+    Column("posting_id", String),
+    Column("submission_id", String),
+    Column("final_status", String),
+    Column("extraction", JSON),
+)
+
+# State tables: kept across runs so payroll writes are never repeated and every call is on record.
+payroll_ledger = Table(
+    "payroll_ledger",
+    metadata,
+    Column("payroll_id", Integer, primary_key=True),
+    Column("absence_date", Date, primary_key=True),
+    Column("code", String, nullable=False),
+    Column("submission_id", String),
+    Column("status", String),
+    Column("source_ref", Text),
+    Column("updated_at", DateTime(timezone=True), server_default=func.now(), onupdate=func.now()),
+)
+
+payroll_audit = Table(
+    "payroll_audit",
+    metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("at", DateTime(timezone=True), server_default=func.now()),
+    Column("action", String, nullable=False),  # GET / POST / DELETE / DRY_RUN
+    Column("payroll_id", Integer),
+    Column("absence_date", Date),
+    Column("request", JSON),
+    Column("status_code", Integer),
+    Column("response", Text),
+    Column("attempt", Integer),
+    Column("dry_run", Boolean, nullable=False),
+)
+
 # --- findings -----------------------------------------------------------------------------------
 
 # Same columns as output/exceptions.csv. Every step appends what it could not resolve cleanly.
@@ -486,7 +548,7 @@ llm_cache = Table(
     Column("created_at", DateTime(timezone=True), server_default=func.now()),
 )
 
-STATE_TABLES = {llm_cache.name}
+STATE_TABLES = {llm_cache.name, payroll_ledger.name, payroll_audit.name}
 
 
 def connect(database_url: str) -> Engine:

@@ -9,11 +9,13 @@ import logging
 from datetime import date
 
 from northgate import db, outputs
+from northgate.callouts.run import callout_shifts, run_callouts
 from northgate.clients import build_clients
 from northgate.config import load_settings
 from northgate.ingest.run import infer_period, ingest_apis, ingest_files
 from northgate.kpis.run import run_kpis
 from northgate.llm import build_extractor
+from northgate.payroll.writer import write_to_payroll
 from northgate.resolve.run import resolve_all
 
 log = logging.getLogger("northgate")
@@ -38,7 +40,19 @@ def main() -> None:
     counts += ingest_apis(engine, payroll, dispatch, finance, period)
 
     counts += resolve_all(engine, period_end(period))
-    run_kpis(engine, settings.output_dir, period, period_start(period), period_end(period))
+    start, end = period_start(period), period_end(period)
+
+    run_callouts(engine, extractor, start, end)
+    write_to_payroll(engine, payroll, settings.payroll_dry_run)
+    log.info(
+        "wrote payroll_submissions.csv (%d rows)",
+        outputs.write_payroll_submissions(engine, settings.output_dir),
+    )
+
+    events = db.fetch(engine, db.callout_events)
+    run_kpis(
+        engine, settings.output_dir, period, start, end, callout_shifts=callout_shifts(events, start, end)
+    )
 
     for table, count in sorted(counts.items()):
         log.info("loaded %-22s %5d rows", table, count)
