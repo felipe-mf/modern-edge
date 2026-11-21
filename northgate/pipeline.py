@@ -12,6 +12,7 @@ from northgate import db, outputs
 from northgate.clients import build_clients
 from northgate.config import load_settings
 from northgate.ingest.run import infer_period, ingest_apis, ingest_files
+from northgate.kpis.run import run_kpis
 from northgate.llm import build_extractor
 from northgate.resolve.run import resolve_all
 
@@ -37,12 +38,19 @@ def main() -> None:
     counts += ingest_apis(engine, payroll, dispatch, finance, period)
 
     counts += resolve_all(engine, period_end(period))
+    run_kpis(engine, settings.output_dir, period, period_start(period), period_end(period))
 
     for table, count in sorted(counts.items()):
         log.info("loaded %-22s %5d rows", table, count)
 
     written = outputs.write_exceptions(engine, settings.output_dir)
     log.info("wrote exceptions.csv (%d rows)", written)
+
+
+def period_start(period: str) -> date:
+    """'2026-10' -> date(2026, 10, 1)."""
+    year, month = (int(part) for part in period.split("-"))
+    return date(year, month, 1)
 
 
 def period_end(period: str) -> date:

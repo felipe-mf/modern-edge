@@ -420,6 +420,46 @@ employee_assignments = Table(
     Column("basis", Text, nullable=False),
 )
 
+# --- KPIs ----------------------------------------------------------------------------------------
+
+kpis_by_building = Table(
+    "kpis_by_building",
+    metadata,
+    Column("building", String, primary_key=True),
+    Column("contracted_headcount", Integer),
+    Column("active_headcount", Integer),
+    Column("headcount_variance", Integer),
+    Column("scheduled_shifts", Integer),
+    Column("callout_shifts", Integer),
+    Column("callout_rate", Numeric(8, 4)),
+    Column("fill_rate", Numeric(8, 4)),
+    Column("overtime_hours", Numeric(10, 2)),
+    Column("overtime_dollars", MONEY),
+    Column("revenue", MONEY),
+    Column("labor_cost", MONEY),
+    Column("gross_margin", MONEY),
+    Column("gross_margin_pct", Numeric(8, 4)),
+    Column("unbilled_coverage_count", Integer),
+    Column("unbilled_coverage_dollars", MONEY),
+)
+
+# Every open receivable item behind ar_aging.csv, so each bucket can be drilled into.
+ar_open_items = Table(
+    "ar_open_items",
+    metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("entity", String),
+    Column("customer_no", String),
+    Column("doc_type", String),
+    Column("doc_no", String),
+    Column("doc_date", Date),
+    Column("due_date", Date),
+    Column("open_amount", MONEY),
+    Column("days_past_due", Integer),
+    Column("bucket", String),
+    _source_ref(),
+)
+
 # --- findings -----------------------------------------------------------------------------------
 
 # Same columns as output/exceptions.csv. Every step appends what it could not resolve cleanly.
