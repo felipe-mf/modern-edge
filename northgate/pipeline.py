@@ -4,13 +4,16 @@ Runs every step in order against a fresh copy of the source tables. Later steps 
 KPIs, call-outs, payroll, billing, outputs) are added here as they are built.
 """
 
+import calendar
 import logging
+from datetime import date
 
-from northgate import db
+from northgate import db, outputs
 from northgate.clients import build_clients
 from northgate.config import load_settings
 from northgate.ingest.run import infer_period, ingest_apis, ingest_files
 from northgate.llm import build_extractor
+from northgate.resolve.run import resolve_all
 
 log = logging.getLogger("northgate")
 
@@ -33,8 +36,19 @@ def main() -> None:
     payroll, dispatch, finance = build_clients(settings)
     counts += ingest_apis(engine, payroll, dispatch, finance, period)
 
+    counts += resolve_all(engine, period_end(period))
+
     for table, count in sorted(counts.items()):
         log.info("loaded %-22s %5d rows", table, count)
+
+    written = outputs.write_exceptions(engine, settings.output_dir)
+    log.info("wrote exceptions.csv (%d rows)", written)
+
+
+def period_end(period: str) -> date:
+    """'2026-10' -> date(2026, 10, 31)."""
+    year, month = (int(part) for part in period.split("-"))
+    return date(year, month, calendar.monthrange(year, month)[1])
 
 
 if __name__ == "__main__":

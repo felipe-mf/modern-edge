@@ -356,6 +356,70 @@ report_control_totals = Table(
     _source_ref(),
 )
 
+# --- resolved identities (step "resolve") --------------------------------------------------------
+
+# Every name or code a source uses for a building, and the Schedule B building it means.
+building_aliases = Table(
+    "building_aliases",
+    metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("source", String, nullable=False),  # finance_site, department, hr_location, dispatch_site, ...
+    Column("alias", String, nullable=False),
+    Column("building", String),  # None = could not be resolved
+    Column("method", String, nullable=False),
+    Column("confidence", String, nullable=False),
+    Column("note", Text),
+)
+
+# One row per Schedule B building with its terms as of the end of the reporting period.
+buildings = Table(
+    "buildings",
+    metadata,
+    Column("building", String, primary_key=True),
+    Column("client_name", String),
+    Column("contractor_name", String),
+    Column("contract_entity", String),
+    Column("department", String),
+    Column("hr_location", String),
+    Column("day_posts", Integer),
+    Column("night_posts", Integer),
+    Column("pricing_basis", String),
+    Column("monthly_fee", MONEY),
+    Column("markup_pct", Numeric(6, 3)),
+    Column("coverage_billable", Boolean),
+    Column("backup_template", String),  # "A" names required, "B" names forbidden, None = no backup rules
+    Column("invoice_entity", String),
+    Column("invoice_customer_no", String),
+    Column("master_customer_no", String),
+    _source_ref(),
+)
+
+# Ids other systems use for an employee (badge, payroll number, dispatch worker) -> HR employee_id.
+employee_xref = Table(
+    "employee_xref",
+    metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("source", String, nullable=False),  # badge / payroll / dispatch
+    Column("source_id", String, nullable=False),
+    Column("name_in_source", String),
+    Column("employee_id", String),  # None = could not be resolved
+    Column("method", String, nullable=False),
+    Column("confidence", String, nullable=False),
+)
+
+# Home building and shift of each employee over time (HR roster, updated by fully approved PAFs).
+employee_assignments = Table(
+    "employee_assignments",
+    metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("employee_id", String, nullable=False),
+    Column("building", String),  # None for the float pool
+    Column("shift", String),
+    Column("start_date", Date),
+    Column("end_date", Date),  # inclusive; None = still assigned
+    Column("basis", Text, nullable=False),
+)
+
 # --- findings -----------------------------------------------------------------------------------
 
 # Same columns as output/exceptions.csv. Every step appends what it could not resolve cleanly.
@@ -394,6 +458,11 @@ def rebuild_source_tables(engine: Engine) -> None:
     source_tables = [t for t in metadata.sorted_tables if t.name not in STATE_TABLES]
     metadata.drop_all(engine, tables=source_tables)
     metadata.create_all(engine)
+
+
+def fetch(engine: Engine, table: Table) -> list[dict]:
+    with engine.connect() as conn:
+        return [dict(r._mapping) for r in conn.execute(select(table))]
 
 
 def insert_rows(engine: Engine, table: Table, rows: Iterable[dict]) -> int:
