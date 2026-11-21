@@ -10,6 +10,9 @@ from northgate import db
 
 EXCEPTION_COLUMNS = ["source", "record_ref", "issue", "action_taken", "confidence"]
 
+# The written log: the rules for every kind of conflict, with what they met in the provided dataset.
+DECISIONS_LOG = Path(__file__).resolve().parents[1] / "docs" / "decisions_log.md"
+
 
 def write_csv(path: Path, columns: list[str], rows: list[dict]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -54,4 +57,40 @@ def write_payroll_submissions(engine: Engine, output_dir: Path) -> int:
             "reason": reason,
         })  # fmt: skip
     write_csv(output_dir / "payroll_submissions.csv", PAYROLL_COLUMNS, rows)
+    return len(rows)
+
+
+def write_decisions_log(engine: Engine, output_dir: Path, period: str, written: Path = DECISIONS_LOG) -> int:
+    """output/decisions_log.md: the written log, then the conflicts this run actually met.
+
+    The written part explains each rule and cites the provided dataset as evidence. The appended part
+    comes from the exceptions table, grouped by area, so on any dataset the log lists every conflict
+    the run resolved or flagged and what it did. Returns how many it listed.
+    """
+    rows = sorted(db.fetch(engine, db.exceptions), key=lambda r: r["id"])
+    by_area: dict[str, list[dict]] = {}
+    for r in rows:
+        by_area.setdefault(r["source"].split(":")[0], []).append(r)
+
+    lines = [
+        written.read_text(encoding="utf-8").rstrip(),
+        "",
+        f"## Conflicts found in this run ({period})",
+        "",
+        (
+            f"Written by the pipeline from `exceptions.csv`: {len(rows)} records it could not resolve or "
+            "chose to flag, each with what it did and how sure it is."
+        ),
+    ]
+    for area, items in by_area.items():
+        lines += ["", f"### {area.replace('_', ' ').capitalize()} ({len(items)})", ""]
+        lines += [
+            f"- `{r['record_ref']}`: {r['issue']} → {r['action_taken']} ({r['confidence']})" for r in items
+        ]
+    if not rows:
+        lines += ["", "None."]
+
+    path = output_dir / "decisions_log.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return len(rows)

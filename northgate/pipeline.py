@@ -1,7 +1,7 @@
 """Pipeline entry point: `python -m northgate.pipeline`.
 
-Runs every step in order against a fresh copy of the source tables. Later steps (resolution,
-KPIs, call-outs, payroll, billing, outputs) are added here as they are built.
+Runs every step in order against a fresh copy of the source tables: ingest files and APIs, resolve
+identities, code call-outs and write them to payroll, billing, KPIs, then the output files.
 """
 
 import calendar
@@ -74,6 +74,8 @@ def main() -> None:
 
     written = outputs.write_exceptions(engine, settings.output_dir)
     log.info("wrote exceptions.csv (%d rows)", written)
+    listed = outputs.write_decisions_log(engine, settings.output_dir, period)
+    log.info("wrote decisions_log.md (%d conflicts found in this run)", listed)
 
 
 def period_start(period: str) -> date:

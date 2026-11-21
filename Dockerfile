@@ -17,4 +17,7 @@ RUN uv sync --frozen --no-dev --no-install-project
 COPY northgate ./northgate
 RUN uv sync --frozen --no-dev
 
+# The written decisions log, copied into ./output with the conflicts of each run appended
+COPY docs ./docs
+
 CMD ["python", "-m", "northgate.smoke"]
