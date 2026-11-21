@@ -8,12 +8,13 @@ from datetime import date
 from functools import cache
 from typing import Literal
 
+import anthropic
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import Engine
 
 from northgate import db
-from northgate.api import review, views
+from northgate.api import chat, review, views
 from northgate.config import Settings, load_settings
 
 app = FastAPI(title="Northgate", docs_url="/api/docs", openapi_url="/api/openapi.json")
@@ -59,6 +60,11 @@ def buildings():
 @app.get("/api/buildings/{building}/board")
 def board(building: str, day: date, shift: Literal["day", "night"]):
     return _found(views.building_board, engine(), building, day, shift)
+
+
+@app.get("/api/buildings/{building}/month")
+def month(building: str, shift: Literal["day", "night"]):
+    return _found(views.building_month, engine(), building, shift)
 
 
 @app.get("/api/kpis")
@@ -115,3 +121,32 @@ class ExceptionAction(BaseModel):
 def review_exception(body: ExceptionAction):
     _found(review.acknowledge_exception, engine(), body.item_key, body.action, body.note)
     return {"status": "recorded"}
+
+
+class ChatMessage(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str
+
+
+class ChatRequest(BaseModel):
+    messages: list[ChatMessage]
+
+
+@cache
+def claude() -> anthropic.Anthropic | None:
+    key = settings().anthropic_api_key
+    return anthropic.Anthropic(api_key=key, max_retries=3) if key else None
+
+
+@app.post("/api/chat")
+def ask(body: ChatRequest):
+    if claude() is None:
+        raise HTTPException(503, "the chatbot needs ANTHROPIC_API_KEY")
+    if not body.messages or body.messages[-1].role != "user":
+        raise HTTPException(422, "the last message must be the user's question")
+    try:
+        return chat.ask(
+            engine(), claude(), settings().anthropic_chat_model, [m.model_dump() for m in body.messages]
+        )
+    except anthropic.APIError as exc:
+        raise HTTPException(502, f"the model could not answer: {exc.message}") from exc

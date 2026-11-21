@@ -39,6 +39,7 @@ class Settings:
     anthropic_api_key: str | None
     anthropic_model: str  # documents: contracts and PAF scans
     anthropic_callout_model: str  # short call-out messages
+    anthropic_chat_model: str  # the "Ask the data" chatbot
 
     payroll_dry_run: bool
     period: str | None  # "YYYY-MM"; None means infer it from the data
@@ -62,6 +63,7 @@ def load_settings() -> Settings:
         anthropic_api_key=_env("ANTHROPIC_API_KEY"),
         anthropic_model=_env("ANTHROPIC_MODEL", "claude-opus-5-5"),
         anthropic_callout_model=_env("ANTHROPIC_CALLOUT_MODEL", "claude-sonnet-5-5"),
+        anthropic_chat_model=_env("ANTHROPIC_CHAT_MODEL", "claude-sonnet-5-5"),
         payroll_dry_run=_env_bool("PAYROLL_DRY_RUN", False),
         period=_env("PERIOD"),
     )

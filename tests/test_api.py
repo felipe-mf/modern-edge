@@ -89,6 +89,12 @@ def test_board_weekend_has_no_shift(engine):
     assert views.building_board(engine, "North", date(2025, 3, 8), "night")["scheduled_day"] is False
 
 
+def test_month_has_one_row_per_weekday(engine):
+    month = views.building_month(engine, "North", "night")
+    assert len(month) == 21  # weekdays in March 2025
+    assert next(m for m in month if m["date"] == DAY)["out"] == 1
+
+
 def test_kpi_detail_lists_the_records_behind_the_number(engine):
     detail = views.kpi_detail(engine, "North", "callout_shifts")
     assert detail["value"] == 1
@@ -126,3 +132,26 @@ def test_panel_ar_aging_has_all_buckets(engine):
     panel = views.kpi_panel(engine)
     assert [b["bucket"] for b in panel["ar_aging"]] == ["current", "1_30", "31_60", "61_90", "over_90"]
     assert panel["ar_aging"][1]["open_amount"] == Decimal("10.00")
+
+
+def test_chat_sql_is_read_only(engine):
+    from northgate.api.chat import read_only_sql
+
+    assert read_only_sql(engine, "select building from buildings")["rows"] == [{"building": "North"}]
+    for bad in ("delete from buildings", "select 1; drop table buildings", "select * from llm_cache"):
+        with pytest.raises(ValueError):
+            read_only_sql(engine, bad)
+
+
+def test_chat_tool_loop_returns_answer_with_sources(engine):
+    from types import SimpleNamespace as NS
+
+    from northgate.api import chat
+
+    replies = iter([
+        NS(content=[NS(type="tool_use", id="t1", name="run_sql", input={"query": "select source_ref from callout_events"})]),
+        NS(content=[NS(type="tool_use", id="t2", name="answer", input={"text": "One call-out.", "sources": ["7", "7"]})]),
+    ])  # fmt: skip
+    client = NS(messages=NS(create=lambda **_: next(replies)))
+    result = chat.ask(engine, client, "model", [{"role": "user", "content": "how many call-outs?"}])
+    assert result == {"answer": "One call-out.", "sources": ["7"]}
