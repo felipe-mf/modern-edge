@@ -75,7 +75,16 @@ export function ChatPanel({ onClose }: { onClose: () => void }) {
             )}
           </div>
         ))}
-        {ask.isPending && <div className="msg assistant secondary">Looking through the records…</div>}
+        {ask.isPending && (
+          <div className="msg assistant secondary thinking" role="status">
+            Looking through the records
+            <span className="dots" aria-hidden="true">
+              <i />
+              <i />
+              <i />
+            </span>
+          </div>
+        )}
         {ask.isError && (
           <p className="error" role="alert">
             {(ask.error as Error).message}. Try again, or rephrase the question.
