@@ -9,6 +9,7 @@ import logging
 from datetime import date
 
 from northgate import db, outputs
+from northgate.billing.run import run_billing
 from northgate.callouts.run import callout_shifts, run_callouts
 from northgate.clients import build_clients
 from northgate.config import load_settings
@@ -55,8 +56,15 @@ def main() -> None:
     )
 
     events = db.fetch(engine, db.callout_events)
+    unbilled = run_billing(engine, settings.output_dir, start, end)
     run_kpis(
-        engine, settings.output_dir, period, start, end, callout_shifts=callout_shifts(events, start, end)
+        engine,
+        settings.output_dir,
+        period,
+        start,
+        end,
+        callout_shifts=callout_shifts(events, start, end),
+        unbilled=unbilled,
     )
 
     for table, count in sorted(counts.items()):

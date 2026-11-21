@@ -522,6 +522,39 @@ payroll_audit = Table(
     Column("dry_run", Boolean, nullable=False),
 )
 
+# --- billing --------------------------------------------------------------------------------------
+
+# One row per billable coverage shift (filled posting at a cost-plus building) and how it was billed.
+billable_coverage = Table(
+    "billable_coverage",
+    metadata,
+    Column("posting_id", String, primary_key=True),
+    Column("building", String),
+    Column("client_name", String),
+    Column("template", String),
+    Column("shift_date", Date),
+    Column("shift", String),
+    Column("reason", String),
+    Column("overtime", Boolean),
+    Column("covering_employee_id", String),
+    Column("covering_name", String),
+    Column("absent_employee_id", String),
+    Column("position_covered", String),
+    Column("base_rate", MONEY),
+    Column("burden_pct", Numeric(6, 3)),
+    Column("markup_pct", Numeric(6, 3)),
+    Column("billable_amount", MONEY),
+    Column("on_site_in", DateTime),
+    Column("on_site_out", DateTime),
+    Column("billed", Boolean),
+    Column("invoice_no", String),
+    Column("invoice_ref", Text),
+    Column("billed_amount", MONEY),
+    Column("match_method", String),
+    Column("note_path", String),
+    _source_ref(),
+)
+
 # --- findings -----------------------------------------------------------------------------------
 
 # Same columns as output/exceptions.csv. Every step appends what it could not resolve cleanly.
