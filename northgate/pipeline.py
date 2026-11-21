@@ -28,7 +28,12 @@ def main() -> None:
     engine = db.connect(settings.database_url)
     db.rebuild_source_tables(engine)
 
+    # Contracts and scanned forms go to the strongest model; call-out messages are short and many,
+    # so they use a cheaper one. Both share the answer cache (the model is part of its key).
     extractor = build_extractor(settings.anthropic_api_key, settings.anthropic_model, db.DbCache(engine))
+    callout_extractor = build_extractor(
+        settings.anthropic_api_key, settings.anthropic_callout_model, db.DbCache(engine)
+    )
     if settings.anthropic_api_key is None:
         log.warning("ANTHROPIC_API_KEY not set: documents not already in the cache will be skipped")
 
@@ -42,7 +47,7 @@ def main() -> None:
     counts += resolve_all(engine, period_end(period))
     start, end = period_start(period), period_end(period)
 
-    run_callouts(engine, extractor, start, end)
+    run_callouts(engine, callout_extractor, start, end)
     write_to_payroll(engine, payroll, settings.payroll_dry_run)
     log.info(
         "wrote payroll_submissions.csv (%d rows)",

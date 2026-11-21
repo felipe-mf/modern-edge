@@ -37,7 +37,8 @@ class Settings:
     finance_password: str
 
     anthropic_api_key: str | None
-    anthropic_model: str
+    anthropic_model: str  # documents: contracts and PAF scans
+    anthropic_callout_model: str  # short call-out messages
 
     payroll_dry_run: bool
     period: str | None  # "YYYY-MM"; None means infer it from the data
@@ -60,6 +61,7 @@ def load_settings() -> Settings:
         finance_password=_env("FINANCE_PASSWORD", ""),
         anthropic_api_key=_env("ANTHROPIC_API_KEY"),
         anthropic_model=_env("ANTHROPIC_MODEL", "claude-opus-5-5"),
+        anthropic_callout_model=_env("ANTHROPIC_CALLOUT_MODEL", "claude-sonnet-5-5"),
         payroll_dry_run=_env_bool("PAYROLL_DRY_RUN", False),
         period=_env("PERIOD"),
     )

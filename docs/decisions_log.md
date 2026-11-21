@@ -197,6 +197,13 @@ row 1) for the log, and the message timestamp (`YYYY-MM-DD HH:MM:SS`, as printed
 Reception log rows that are not absences are listed in exceptions.csv; ordinary chat conversation is
 kept in `callout_events` but not listed.
 
+**D-39. Two models.** Contracts, the amendment, the wage schedule and the scanned PAFs are read by
+`ANTHROPIC_MODEL` (Opus): few documents, long text and images, terms that drive money. Call-out
+messages are short and many, so they use `ANTHROPIC_CALLOUT_MODEL` (Sonnet). The switch was checked
+against the Opus run: the first Sonnet pass left the name empty for two chat messages that give only
+"Andre" and "Ana L" (code held both, nothing wrong was written); after making `employee_name`
+required and saying a first name alone counts, all 71 messages gave the same decisions as Opus.
+
 ## Documentation inconsistencies
 
 **D-05. Backup note templates file name.** `docs/data_guide.md` refers to `billing_note_formats.md`;

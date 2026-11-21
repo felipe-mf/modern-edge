@@ -23,7 +23,7 @@ WED = date(2025, 3, 5)
 
 
 def _extraction(**fields) -> CalloutExtraction:
-    return CalloutExtraction(**{"is_absence": True, "follow_up_of_earlier_report": False, "reason": "own_illness",
+    return CalloutExtraction(**{"is_absence": True, "follow_up_of_earlier_report": False, "reason": "own_illness", "employee_name": None,
                                 **fields})  # fmt: skip
 
 

@@ -39,6 +39,7 @@ services:
       DATABASE_URL: postgresql+psycopg://northgate:northgate@db:5432/northgate
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-opus-5-5}
+      ANTHROPIC_CALLOUT_MODEL: ${ANTHROPIC_CALLOUT_MODEL:-claude-sonnet-5-5}
       PAYROLL_DRY_RUN: ${PAYROLL_DRY_RUN:-false}
       PERIOD: ${PERIOD:-}
     volumes:

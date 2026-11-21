@@ -33,7 +33,10 @@ class CalloutExtraction(BaseModel):
         description="True if the message only confirms, repeats or refers back to an earlier report"
     )
     not_absence_reason: str | None = Field(None, description="When is_absence is false: why, in a few words")
-    employee_name: str | None = Field(None, description="The absent employee's name exactly as written")
+    # Required (no default) so the model always answers it, even when only a first name is given.
+    employee_name: str | None = Field(
+        description="The absent employee's name as written, even a first name or initial alone; null only if none"
+    )
     reason: Literal[
         "own_illness",
         "family_illness",
@@ -68,7 +71,9 @@ operational chatter, acknowledgements ('got it'), and messages that add no absen
 or refers back to an earlier report ('called back to confirm the call-out from earlier').
 - employee_name: the absent employee as written. For a log row, combine the Caller column and the \
 message (prefer the fuller form, e.g. 'Fatmire Berisha' over 'F. Berisha'). In the chat the author is \
-usually a manager passing on an employee's message: give the employee, never the author.
+usually a manager passing on an employee's message: give the employee, never the author. Always fill \
+it when the message names the absent employee in any form, even a first name alone or a first name \
+and an initial ('Andre', 'Ana L'); identifying the person is done later. Null only if no name appears.
 - reason: own_illness (the employee is sick); family_illness (a child or other relative is sick); \
 family_emergency (another urgent family matter); medical_appointment (clinic or doctor appointment, \
 'clinic day'); bereavement (a death in the family); jury_duty; personal (a personal day); \
