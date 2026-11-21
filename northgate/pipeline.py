@@ -47,6 +47,8 @@ def main() -> None:
 
     counts += resolve_all(engine, period_end(period))
     start, end = period_start(period), period_end(period)
+    db.insert_rows(engine, db.run_info, [{"period": period, "period_start": start, "period_end": end,
+                                          "payroll_dry_run": settings.payroll_dry_run}])  # fmt: skip
 
     run_callouts(engine, callout_extractor, start, end)
     write_to_payroll(engine, payroll, settings.payroll_dry_run)

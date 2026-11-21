@@ -54,6 +54,20 @@ REVIEW = "held_for_review"
 WRITE = "written"
 
 
+def event_key(e: dict) -> str:
+    """Stable across runs: the message and the day it is about."""
+    return f"{e['source']}|{e['source_ref']}|{e.get('absence_date') or ''}"
+
+
+def latest_reviews(engine: Engine, kind: str) -> dict[str, dict]:
+    """The last action a reviewer took on each item."""
+    latest: dict[str, dict] = {}
+    for action in sorted(db.fetch(engine, db.review_actions), key=lambda a: a["id"]):
+        if action["item_kind"] == kind:
+            latest[action["item_key"]] = action
+    return latest
+
+
 @dataclass
 class Message:
     source: str  # reception_log / area_manager_chat (the output file's names)
@@ -209,17 +223,34 @@ def run_callouts(engine: Engine, extractor: Extractor, start: date, end: date) -
     _payroll_guards(absences, payroll_status, start, end)
     _check_dispatch(engine, absences, postings, by_id, posting_for, site_building)
 
+    reviews = latest_reviews(engine, "callout")
     for e in events:
         e["evidence"] = "; ".join(e.get("evidence") or [])
         e["hold_reason"] = e.get("hold_reason") or "; ".join(e.pop("holds", None) or []) or None
         e.pop("holds", None)
         if e["outcome"] == "absence" and not e.get("decision"):
             e["decision"] = REVIEW if e["hold_reason"] else WRITE
+            _apply_review(e, reviews.get(event_key(e)))
         _report(engine, e)
     columns = [c.name for c in db.callout_events.columns if c.name != "id"]
     db.insert_rows(engine, db.callout_events, [{c: e.get(c) for c in columns} for e in events])
     log.info("call-outs: %s", dict(Counter(e["outcome"] for e in events)))
     return db.fetch(engine, db.callout_events)
+
+
+def _apply_review(e: dict, review: dict | None) -> None:
+    """A person's decision in the review queue overrides the hold (approve) or confirms it (dismiss)."""
+    if review is None or e["decision"] != REVIEW:
+        return
+    note = f" ({review['note']})" if review.get("note") else ""
+    if review["action"] == "approve" and e.get("payroll_id") and e.get("code"):
+        e["decision"] = WRITE
+        e["evidence"] = "; ".join(
+            filter(None, [e["evidence"], f"held ({e['hold_reason']}), approved by reviewer{note}"])
+        )
+        e["hold_reason"] = None
+    elif review["action"] == "dismiss":
+        e["hold_reason"] = f"dismissed by reviewer{note}; was: {e['hold_reason']}"
 
 
 def _fold_duplicates(engine: Engine, absences: list[dict]) -> list[dict]:

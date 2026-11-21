@@ -555,6 +555,33 @@ billable_coverage = Table(
     _source_ref(),
 )
 
+# --- run and review ---------------------------------------------------------------------------
+
+# What the last pipeline run covered, for the screens.
+run_info = Table(
+    "run_info",
+    metadata,
+    Column("period", String, primary_key=True),
+    Column("period_start", Date, nullable=False),
+    Column("period_end", Date, nullable=False),
+    Column("payroll_dry_run", Boolean, nullable=False),
+    Column("run_at", DateTime(timezone=True), server_default=func.now()),
+)
+
+# State: decisions people made in the review queue. Kept across runs, keyed by a stable item key
+# (see callouts.run.event_key), so an approval made in the interface also holds on the next run.
+review_actions = Table(
+    "review_actions",
+    metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("item_kind", String, nullable=False),  # callout / exception
+    Column("item_key", Text, nullable=False),
+    Column("action", String, nullable=False),  # approve / dismiss / acknowledge
+    Column("note", Text),
+    Column("result", Text),
+    Column("at", DateTime(timezone=True), server_default=func.now()),
+)
+
 # --- findings -----------------------------------------------------------------------------------
 
 # Same columns as output/exceptions.csv. Every step appends what it could not resolve cleanly.
@@ -581,7 +608,7 @@ llm_cache = Table(
     Column("created_at", DateTime(timezone=True), server_default=func.now()),
 )
 
-STATE_TABLES = {llm_cache.name, payroll_ledger.name, payroll_audit.name}
+STATE_TABLES = {llm_cache.name, payroll_ledger.name, payroll_audit.name, review_actions.name}
 
 
 def connect(database_url: str) -> Engine:
