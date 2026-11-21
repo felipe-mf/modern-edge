@@ -151,6 +151,16 @@ def _names_match(posting: dict, employee: dict) -> bool:
     return name_level(posting["absent_employee_text"], employee) >= 2
 
 
+def building_month(engine: Engine, building: str, shift: str) -> list[dict]:
+    """The building's board summary for every weekday of the period, for the month line."""
+    run = run_info(engine)
+    if run is None:
+        raise KeyError("run")
+    return [{"date": day, "contracted": board["contracted"], **board["summary"]}
+            for day in weekdays(run["period_start"], run["period_end"])
+            for board in [building_board(engine, building, day, shift)]]  # fmt: skip
+
+
 # --- KPI drill-down ------------------------------------------------------------------------------
 
 METRICS = {

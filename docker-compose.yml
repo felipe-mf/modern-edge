@@ -40,6 +40,7 @@ services:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-opus-5-5}
       ANTHROPIC_CALLOUT_MODEL: ${ANTHROPIC_CALLOUT_MODEL:-claude-sonnet-5-5}
+      ANTHROPIC_CHAT_MODEL: ${ANTHROPIC_CHAT_MODEL:-claude-sonnet-5-5}
       PAYROLL_DRY_RUN: ${PAYROLL_DRY_RUN:-false}
       PERIOD: ${PERIOD:-}
     volumes:
@@ -66,6 +67,14 @@ services:
     depends_on:
       pipeline:
         condition: service_completed_successfully
+
+  # The interface: http://localhost:8080
+  web:
+    build: ./web
+    ports:
+      - "127.0.0.1:${WEB_PORT:-8080}:80"
+    depends_on:
+      - api
 
 volumes:
   pgdata:
