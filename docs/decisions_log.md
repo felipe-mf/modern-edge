@@ -104,6 +104,32 @@ in payroll. Absences for such employees are held for review with that reason ins
 **D-23. Labor budget.** The FY26 labor budget is out of date (last updated in June, 2025 rates, a
 terminated employee still listed). It is loaded for reference only and never used for headcount or rates.
 
+## KPIs
+
+**D-24. Active headcount.** Counted on the last day of the period from the resolved home building
+(D-19). An employee whose termination date is on or before that day counts as terminated.
+
+**D-25. Scheduled shifts and holidays.** The KPI scope says shifts run Monday to Friday; Schedule B
+excludes "holidays observed by the Building" but no holiday calendar is provided. Every weekday is
+counted. October has no US federal holiday that closes buildings, so this has no effect here.
+
+**D-26. Fill rate and overtime from dispatch.** Postings are taken by shift date within the period.
+Cancelled postings are excluded; a posting is filled when its status is FILLED. Overtime uses the
+fill type of the posting's final assignment (D-13); each such shift adds 8 hours at the posting's site.
+
+**D-27. Wage rate effective date.** The CBA says a rate takes effect on the first day of the first full
+payroll week on or after the date shown, but the payroll week is not defined anywhere. The rate in
+force on a day is the latest one whose date shown is on or before that day. This only matters in the
+first days of a new rate year, not in the reporting period.
+
+**D-28. Labor cost period.** The GL labor report for 2026-10 includes the week ending 11/01/26. The
+ledger assigns it to October, so it is included; labor cost is exactly the report's department total.
+
+**D-29. AR aging.** As of the last day of the period. Documents dated after it are not yet receivable
+(observed: NFS-7124, dated 11/02 for October service, counts as October revenue but is not open AR on
+10/31 and is not in the AR report either). A payment that names no invoice in the report would be aged
+as an unapplied credit and reported; none occur in this dataset.
+
 ## Documentation inconsistencies
 
 **D-05. Backup note templates file name.** `docs/data_guide.md` refers to `billing_note_formats.md`;
