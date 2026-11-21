@@ -65,7 +65,10 @@ def send_with_retry(
             last_error = None
             log.info(
                 "HTTP %s from %s (attempt %d/%d), retrying",
-                response.status_code, response.request.url, attempt + 1, max_attempts,
+                response.status_code,
+                response.request.url,
+                attempt + 1,
+                max_attempts,
             )
         if attempt + 1 < max_attempts:
             sleep(retry_delay(attempt, response))

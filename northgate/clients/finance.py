@@ -70,7 +70,9 @@ class FinanceClient:
         """Submit a report job, wait for it and return the file text. Resubmits FAILED jobs."""
         request = {"report_code": report_code, "entity_code": entity_code, "period": period}
         for submission in range(1, max_submissions + 1):
-            response = send_with_retry(lambda: self.http.post(f"{self.base_url}/api/v1/reports", json=request))
+            response = send_with_retry(
+                lambda: self.http.post(f"{self.base_url}/api/v1/reports", json=request)
+            )
             if response.status_code == 404:
                 raise ReportNotAvailable(f"{request}: {response.text[:200]}")
             job = raise_for_status(response).json()
@@ -81,7 +83,10 @@ class FinanceClient:
                 return self._get(file_path).text
             log.warning(
                 "Report %s failed (submission %d/%d): %s",
-                request, submission, max_submissions, status.get("error"),
+                request,
+                submission,
+                max_submissions,
+                status.get("error"),
             )
         raise RuntimeError(f"Report {request} failed {max_submissions} times")
 

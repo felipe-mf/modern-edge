@@ -99,7 +99,9 @@ def test_finance_resubmits_failed_report_job():
     respx.get(f"{base}/api/v1/reports/J2").mock(
         side_effect=[
             httpx.Response(200, json={"job_id": "J2", "status": "RUNNING"}),
-            httpx.Response(200, json={"job_id": "J2", "status": "COMPLETE", "file_url": "/api/v1/reports/J2/file"}),
+            httpx.Response(
+                200, json={"job_id": "J2", "status": "COMPLETE", "file_url": "/api/v1/reports/J2/file"}
+            ),
         ]
     )
     respx.get(f"{base}/api/v1/reports/J2/file").mock(return_value=httpx.Response(200, text="REPORT"))

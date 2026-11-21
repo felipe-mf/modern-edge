@@ -47,7 +47,9 @@ def load_settings() -> Settings:
     return Settings(
         data_dir=Path(_env("DATA_DIR", "./data")),
         output_dir=Path(_env("OUTPUT_DIR", "./output")),
-        database_url=_env("DATABASE_URL", "postgresql+psycopg://northgate:northgate@localhost:5432/northgate"),
+        database_url=_env(
+            "DATABASE_URL", "postgresql+psycopg://northgate:northgate@localhost:5432/northgate"
+        ),
         payroll_url=_env("PAYROLL_URL", "http://localhost:8081").rstrip("/"),
         payroll_api_key=_env("PAYROLL_API_KEY", ""),
         dispatch_url=_env("DISPATCH_URL", "http://localhost:8082").rstrip("/"),
