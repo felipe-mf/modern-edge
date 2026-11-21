@@ -8,7 +8,11 @@ ModernEdge AI Solutions Engineer assessment. Work in progress.
    `cd mock_systems && docker compose up --build`.
 2. Put the client files in `./data` (or point `DATA_DIR` at them) and copy `.env.example` to `.env`
    to set `ANTHROPIC_API_KEY`.
-3. `docker compose up`. Outputs are written to `./output`.
+3. `docker compose up --build`. Outputs are written to `./output`.
+
+The pipeline loads every source into Postgres (one table per source, each row with a `source_ref`
+back to its file line or API record). Postgres data lives in the `pgdata` volume, so cached document
+extractions survive `docker compose down`; `docker compose down -v` starts from zero.
 
 ## Configuration
 

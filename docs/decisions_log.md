@@ -24,6 +24,39 @@ processing windows. Reads retry on 429/5xx and network errors with backoff (hono
 **D-04. Reporting period.** Not hard-coded. Taken from `PERIOD` when set, otherwise inferred from the
 time clock data.
 
+**D-08. Finding the input files.** Files are found by folder (as laid out in `data_guide.md`) and by
+their content, not by exact name: the two punch layouts and the site code list are told apart by their
+header row, the call-out log by a header containing Date, Caller and Message on any sheet. Office lock
+files (`.~lock...#`, `~$...`) are skipped.
+
+## Reading the sources
+
+**D-09. Claude reads documents; code checks what it read.** Contracts, amendments and the wage schedule
+are prose with loose tables, and the PAFs are scans with no text layer. Claude extracts them into fixed
+schemas. Every building name, post count, fee, markup, rate and burden it returns must be printed in the
+document text; anything that is not goes to `exceptions.csv` with low confidence. Claude never decides
+whether a form takes effect: a PAF takes effect only if every approval row is signed, checked in code.
+
+**D-10. Extraction cache.** Each Claude answer is stored in Postgres under a hash of the model, schema,
+instructions and input. A re-run on the same files returns the same answer at no cost, and works without
+an API key. Changing the prompt or schema changes the hash, so an old answer is never reused for a new
+question. Without a key, uncached documents are skipped and listed in `exceptions.csv`.
+
+**D-11. Punch event names.** The time clock firmware update renamed events. Old `IN`/`OUT`/`BREAK_OUT`/
+`BREAK_IN` and new `CLOCK_IN`/`CLOCK_OUT`/`MEAL_START`/`MEAL_END` map to `IN`/`OUT`/`MEAL_START`/
+`MEAL_END`. Unknown events are reported, not dropped.
+
+**D-12. Punch times.** The old layout prints local time with no zone; the new one prints ISO time with a
+UTC offset. Both record the building's wall-clock time, so the local time is kept as written and the
+offset is stored separately.
+
+**D-13. Reassigned dispatch postings.** Some postings were assigned, unassigned and assigned again. The
+posting's history is replayed in time order: the last `ASSIGNED` counts and an `UNASSIGNED` clears it.
+
+**D-14. Report control totals.** Each ERP report prints its own totals (invoice register total, AR record
+count, GL department and entity totals). Parsers re-add what they read and compare. All six reports of
+the provided dataset tie exactly. A mismatch would be listed in `exceptions.csv`.
+
 ## Documentation inconsistencies
 
 **D-05. Backup note templates file name.** `docs/data_guide.md` refers to `billing_note_formats.md`;
