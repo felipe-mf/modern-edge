@@ -232,6 +232,20 @@ written from HR in title case ("Teuta Berisha").
 **D-44. Unbilled coverage at fixed-fee buildings** is 0, not blank: the definition only counts
 buildings whose agreement makes coverage billable, so there is nothing to bill there.
 
+## Interface
+
+**D-45. The interface reads, it does not recompute.** The API serves what the pipeline wrote. A KPI
+drill-down lists the records behind the stored figure, and was checked to add up to it for every
+building and metric. The building view reads assignments, punches (same on-site windows as the
+backup notes, D-42), call-outs and dispatch postings for one building, date and shift.
+
+**D-46. Review decisions persist.** Approve and dismiss actions are stored in `review_actions`, which
+pipeline runs do not wipe, keyed by message and date. Approving a held absence sends it through the
+payroll writer (D-37), so it cannot create a duplicate; payroll can still refuse it, and then it stays
+held with payroll's answer. The next pipeline run reads the same actions, so an approved absence stays
+written and a dismissed one stays out. Absences with no payroll ID or code cannot be approved, only
+dismissed.
+
 ## Documentation inconsistencies
 
 **D-05. Backup note templates file name.** `docs/data_guide.md` refers to `billing_note_formats.md`;
